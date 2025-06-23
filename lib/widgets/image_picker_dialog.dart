@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
@@ -46,12 +47,14 @@ class ImagePickerDialog extends StatelessWidget {
 class ImagePickerHelper {
   static final ImagePicker _picker = ImagePicker();
 
-  static Future<File?> pickImageFromCamera() async {
+  static Future<XFile?> pickImageFromCamera() async {
     try {
-      // 카메라 권한 요청
-      var status = await Permission.camera.request();
-      if (status.isDenied) {
-        throw Exception('카메라 권한이 필요합니다.');
+      if (!kIsWeb) {
+        // 카메라 권한 요청
+        var status = await Permission.camera.request();
+        if (status.isDenied) {
+          throw Exception('카메라 권한이 필요합니다.');
+        }
       }
 
       final XFile? image = await _picker.pickImage(
@@ -59,21 +62,20 @@ class ImagePickerHelper {
         imageQuality: 80, // 이미지 품질 설정
       );
 
-      if (image != null) {
-        return File(image.path);
-      }
-      return null;
+      return image;
     } catch (e) {
       throw Exception('카메라 오류: $e');
     }
   }
 
-  static Future<File?> pickImageFromGallery() async {
+  static Future<XFile?> pickImageFromGallery() async {
     try {
-      // 갤러리 권한 요청
-      var status = await Permission.photos.request();
-      if (status.isDenied) {
-        throw Exception('갤러리 권한이 필요합니다.');
+      if (!kIsWeb) {
+        // 갤러리 권한 요청
+        var status = await Permission.photos.request();
+        if (status.isDenied) {
+          throw Exception('갤러리 권한이 필요합니다.');
+        }
       }
 
       final XFile? image = await _picker.pickImage(
@@ -81,16 +83,13 @@ class ImagePickerHelper {
         imageQuality: 80, // 이미지 품질 설정
       );
 
-      if (image != null) {
-        return File(image.path);
-      }
-      return null;
+      return image;
     } catch (e) {
       throw Exception('갤러리 오류: $e');
     }
   }
 
-  static Future<File?> showImagePickerDialog(BuildContext context) async {
+  static Future<XFile?> showImagePickerDialog(BuildContext context) async {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => const ImagePickerDialog(),

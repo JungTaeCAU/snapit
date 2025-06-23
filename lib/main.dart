@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/confirm_account_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/auth_service.dart';
 
 void main() {
@@ -18,7 +20,7 @@ class SnapItApp extends StatelessWidget {
       title: 'SnapIt',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
+          seedColor: const Color(0xFF006FFD),
           background: const Color(0xFFF7F7F7), // SnowFlake color
         ),
         scaffoldBackgroundColor: const Color(0xFFF7F7F7), // SnowFlake color
@@ -26,7 +28,7 @@ class SnapItApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => const AuthWrapper(),
+        '/': (context) => const InitialScreenWrapper(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/home': (context) => const MainNavigationScreen(),
@@ -36,6 +38,42 @@ class SnapItApp extends StatelessWidget {
           final email = args?['email'] as String?;
           return ConfirmAccountScreen(email: email ?? '');
         },
+      },
+    );
+  }
+}
+
+class InitialScreenWrapper extends StatefulWidget {
+  const InitialScreenWrapper({super.key});
+
+  @override
+  State<InitialScreenWrapper> createState() => _InitialScreenWrapperState();
+}
+
+class _InitialScreenWrapperState extends State<InitialScreenWrapper> {
+  Future<bool> _hasSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('seenOnboarding') ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _hasSeenOnboarding(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.data == true) {
+          return const AuthWrapper();
+        }
+
+        return const OnboardingScreen();
       },
     );
   }

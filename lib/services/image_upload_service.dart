@@ -1,7 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
+import '../models/food_candidate.dart';
+import '../models/meal_event.dart';
 import 'auth_service.dart';
 
 class ImageUploadService {
@@ -19,7 +24,11 @@ class ImageUploadService {
   static const String _analysisEndpoint =
       'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/analyze';
 
-  Future<String?> uploadImage(File imageFile) async {
+  // 식사 기록을 저장하기 위한 API 엔드포인트
+  static const String _saveMealEndpoint =
+      'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/food-logs';
+
+  Future<List<FoodCandidate>?> uploadImage(XFile imageFile) async {
     try {
       // Bearer 토큰 가져오기
       final token = await _authService.getAccessToken();
@@ -27,11 +36,15 @@ class ImageUploadService {
         throw Exception('인증 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
       }
 
-      // 1단계: GET으로 업로드 URL 받기
-      final uploadUrl = await _getUploadUrl(token);
-      if (uploadUrl == null) {
-        throw Exception('업로드 URL을 받아올 수 없습니다.');
+      // 1단계: GET으로 업로드 URL과 objectKey 받기
+      final uploadData = await _getUploadUrl(token);
+      if (uploadData == null ||
+          uploadData['uploadUrl'] == null ||
+          uploadData['objectKey'] == null) {
+        throw Exception('업로드 URL 또는 objectKey를 받아올 수 없습니다.');
       }
+      final uploadUrl = uploadData['uploadUrl']!;
+      final objectKey = uploadData['objectKey']!;
 
       // 2단계: 받은 URL로 이미지 업로드
       final uploadSuccess = await _uploadToUrl(imageFile, uploadUrl);
@@ -40,15 +53,44 @@ class ImageUploadService {
       }
 
       // 3단계: 분석 API 호출
-      final analysisResult = await _callAnalysisApi(token);
+      final analysisResult = await _callAnalysisApi(token, objectKey);
       return analysisResult;
     } catch (e) {
       throw Exception('Upload error: $e');
     }
   }
 
+  Future<void> saveMealEvent(MealEvent event) async {
+    try {
+      final token = await _authService.getAccessToken();
+      if (token == null) {
+        throw Exception('인증 토큰을 가져올 수 없습니다. 다시 로그인해주세요.');
+      }
+
+      final response = await http.post(
+        Uri.parse(_saveMealEndpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token,
+        },
+        body: json.encode({
+          'food_name': event.food.name,
+          'calories': event.food.calories,
+          'meal_type': event.mealType.name, // 'breakfast', 'lunch', etc.
+          'eaten_at': event.timestamp.toIso8601String(),
+        }),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to save meal event: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error saving meal event: $e');
+    }
+  }
+
   // GET으로 업로드 URL 받기 (Bearer 토큰 포함)
-  Future<String?> _getUploadUrl(String token) async {
+  Future<Map<String, String?>?> _getUploadUrl(String token) async {
     try {
       final response = await http.get(
         Uri.parse(_getUploadUrlEndpoint),
@@ -60,7 +102,10 @@ class ImageUploadService {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        return jsonResponse['uploadUrl']; // 서버 응답에서 업로드 URL 추출
+        return {
+          'uploadUrl': jsonResponse['uploadUrl'],
+          'objectKey': jsonResponse['objectKey'],
+        };
       } else {
         throw Exception('Failed to get upload URL: ${response.statusCode}');
       }
@@ -70,34 +115,29 @@ class ImageUploadService {
   }
 
   // 받은 URL로 이미지 업로드
-  Future<bool> _uploadToUrl(File imageFile, String uploadUrl) async {
+  Future<bool> _uploadToUrl(XFile imageFile, String uploadUrl) async {
     try {
-      var request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
+      final imageBytes = await imageFile.readAsBytes();
+      final mimeType = lookupMimeType(imageFile.name) ?? 'application/octet-stream';
 
-      // 파일 추가
-      var stream = http.ByteStream(imageFile.openRead());
-      var length = await imageFile.length();
-
-      var multipartFile = http.MultipartFile(
-        'image', // 서버에서 기대하는 필드명
-        stream,
-        length,
-        filename: path.basename(imageFile.path),
+      final response = await http.put(
+        Uri.parse(uploadUrl),
+        headers: {
+          'Content-Type': mimeType,
+        },
+        body: imageBytes,
       );
-
-      request.files.add(multipartFile);
-
-      // 요청 전송
-      var response = await request.send();
 
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
+      print(e);
       throw Exception('Error uploading to URL: $e');
     }
   }
 
   // 분석 API 호출 (Bearer 토큰 포함)
-  Future<String?> _callAnalysisApi(String token) async {
+  Future<List<FoodCandidate>?> _callAnalysisApi(
+      String token, String objectKey) async {
     try {
       final response = await http.post(
         Uri.parse(_analysisEndpoint),
@@ -106,14 +146,16 @@ class ImageUploadService {
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          // 필요한 경우 분석에 필요한 데이터를 여기에 추가
-          'timestamp': DateTime.now().toIso8601String(),
+          'objectKey': objectKey,
         }),
       );
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        return jsonResponse['result']; // 분석 결과 반환
+        final List<dynamic> candidatesJson = jsonResponse['candidates'];
+        return candidatesJson
+            .map((json) => FoodCandidate.fromJson(json))
+            .toList();
       } else {
         throw Exception('Analysis failed: ${response.statusCode}');
       }

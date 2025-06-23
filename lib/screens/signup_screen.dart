@@ -74,10 +74,6 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sign Up'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -170,7 +166,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: _isLoading ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFF006FFD),
                     foregroundColor: Colors.white,
                   ),
                   child: _isLoading

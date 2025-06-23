@@ -89,8 +89,8 @@ class _ConfirmAccountScreenState extends State<ConfirmAccountScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Icon(Icons.mark_email_unread,
-                    size: 48, color: Colors.blue[700]),
+                Icon(Icons.check_circle_outline,
+                    size: 48, color: Color(0xFF006FFD)),
                 const SizedBox(height: 16),
                 Text(
                   'We have sent a code in an Email message to $maskedEmail. To confirm your account, enter your code.',
@@ -134,9 +134,9 @@ class _ConfirmAccountScreenState extends State<ConfirmAccountScreen> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _confirmCode,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: const Color(0xFF006FFD),
+                    foregroundColor: Colors.white,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)

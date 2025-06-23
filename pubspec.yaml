@@ -33,11 +33,14 @@ dependencies:
   cupertino_icons: ^1.0.2
   amazon_cognito_identity_dart_2: ^3.8.1
   provider: ^6.1.1
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.5.3
   image_picker: ^1.0.7
   http: ^1.1.0
   path: ^1.8.3
-  permission_handler: ^11.1.0
+  permission_handler: ^12.0.0+1
+  mime: ^2.0.0
+  intl: ^0.20.2
+  table_calendar: ^3.2.0
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -52,7 +55,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
