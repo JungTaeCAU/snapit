@@ -15,9 +15,7 @@ extension MealTypeExtension on MealType {
         return '저녁';
       case MealType.snack:
         return '간식';
-      default:
-        return '';
-    }
+      }
   }
 }
 
@@ -33,4 +31,24 @@ class MealEvent {
     required this.timestamp,
     required this.imageFile,
   });
-} 
+
+  factory MealEvent.fromJson(Map<String, dynamic> json) {
+    return MealEvent(
+      food: FoodCandidate.fromJson(json['food']),
+      mealType: MealType.values.firstWhere(
+        (e) => e.toString().split('.').last == json['mealType'],
+      ),
+      timestamp: DateTime.parse(json['timestamp']),
+      imageFile: XFile(json['imageUrl']), // API에서는 imageUrl로 받음
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'food': food.toJson(),
+      'mealType': mealType.toString().split('.').last,
+      'timestamp': timestamp.toIso8601String(),
+      'imageUrl': imageFile.path, // objectKey 값을 imageUrl로 전송
+    };
+  }
+}

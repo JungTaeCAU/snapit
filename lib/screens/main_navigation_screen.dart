@@ -16,7 +16,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   static const List<Widget> _screens = [
     HomeScreen(),
-    CalendarScreen(),
+    AnalysisScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -49,41 +49,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             index: _selectedIndex,
             children: _screens,
           ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
-            right: 16,
-            child: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) async {
-                if (value == 'logout') {
-                  await _signOut();
-                }
-              },
-              itemBuilder: (BuildContext context) => [
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout),
-                      SizedBox(width: 8),
-                      Text('Logout'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: '홈',
+            label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: '캘린더',
+            icon: Icon(Icons.analytics),
+            label: 'Analysis',
           ),
         ],
         currentIndex: _selectedIndex,

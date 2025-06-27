@@ -28,7 +28,7 @@ class ImageUploadService {
   static const String _saveMealEndpoint =
       'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/food-logs';
 
-  Future<List<FoodCandidate>?> uploadImage(XFile imageFile) async {
+  Future<Map<String, dynamic>?> uploadImage(XFile imageFile) async {
     try {
       // Bearer 토큰 가져오기
       final token = await _authService.getAccessToken();
@@ -38,13 +38,19 @@ class ImageUploadService {
 
       // 1단계: GET으로 업로드 URL과 objectKey 받기
       final uploadData = await _getUploadUrl(token);
-      if (uploadData == null ||
-          uploadData['uploadUrl'] == null ||
-          uploadData['objectKey'] == null) {
-        throw Exception('업로드 URL 또는 objectKey를 받아올 수 없습니다.');
+      if (uploadData == null) {
+        throw Exception('업로드 데이터를 받아올 수 없습니다.');
       }
-      final uploadUrl = uploadData['uploadUrl']!;
-      final objectKey = uploadData['objectKey']!;
+
+      final uploadUrl = uploadData['uploadUrl'];
+      final objectKey = uploadData['objectKey'];
+
+      if (uploadUrl == null || objectKey == null) {
+        throw Exception('업로드 URL 또는 objectKey가 null입니다.');
+      }
+
+      print('Upload URL: $uploadUrl'); // 디버깅용 로그
+      print('Object Key: $objectKey'); // 디버깅용 로그
 
       // 2단계: 받은 URL로 이미지 업로드
       final uploadSuccess = await _uploadToUrl(imageFile, uploadUrl);
@@ -54,7 +60,11 @@ class ImageUploadService {
 
       // 3단계: 분석 API 호출
       final analysisResult = await _callAnalysisApi(token, objectKey);
-      return analysisResult;
+
+      return {
+        'candidates': analysisResult,
+        'objectKey': objectKey,
+      };
     } catch (e) {
       throw Exception('Upload error: $e');
     }
@@ -76,8 +86,12 @@ class ImageUploadService {
         body: json.encode({
           'food_name': event.food.name,
           'calories': event.food.calories,
+          'protein': event.food.protein,
+          'carbs': event.food.carbs,
+          'fat': event.food.fat,
           'meal_type': event.mealType.name, // 'breakfast', 'lunch', etc.
           'eaten_at': event.timestamp.toIso8601String(),
+          'imageUrl': event.imageFile.path, // objectKey를 imageUrl로 전달
         }),
       );
 
@@ -102,11 +116,21 @@ class ImageUploadService {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
+        print('Upload URL response: $jsonResponse'); // 디버깅용 로그
+
+        final uploadUrl = jsonResponse['uploadUrl']?.toString();
+        final objectKey = jsonResponse['objectKey']?.toString();
+
+        if (uploadUrl == null || objectKey == null) {
+          throw Exception('uploadUrl 또는 objectKey가 null입니다. 응답: $jsonResponse');
+        }
+
         return {
-          'uploadUrl': jsonResponse['uploadUrl'],
-          'objectKey': jsonResponse['objectKey'],
+          'uploadUrl': uploadUrl,
+          'objectKey': objectKey,
         };
       } else {
+        print('Upload URL error response: ${response.body}'); // 디버깅용 로그
         throw Exception('Failed to get upload URL: ${response.statusCode}');
       }
     } catch (e) {
@@ -118,7 +142,8 @@ class ImageUploadService {
   Future<bool> _uploadToUrl(XFile imageFile, String uploadUrl) async {
     try {
       final imageBytes = await imageFile.readAsBytes();
-      final mimeType = lookupMimeType(imageFile.name) ?? 'application/octet-stream';
+      final mimeType =
+          lookupMimeType(imageFile.name) ?? 'application/octet-stream';
 
       final response = await http.put(
         Uri.parse(uploadUrl),
@@ -139,6 +164,12 @@ class ImageUploadService {
   Future<List<FoodCandidate>?> _callAnalysisApi(
       String token, String objectKey) async {
     try {
+      if (objectKey.isEmpty) {
+        throw Exception('objectKey가 비어있습니다.');
+      }
+
+      print('Calling analysis API with objectKey: $objectKey'); // 디버깅용 로그
+
       final response = await http.post(
         Uri.parse(_analysisEndpoint),
         headers: {
@@ -150,14 +181,51 @@ class ImageUploadService {
         }),
       );
 
-      if (response.statusCode == 200) {
+      print('Analysis API response status: ${response.statusCode}'); // 디버깅용 로그
+      print('Analysis API response body: ${response.body}'); // 디버깅용 로그
+
+      if (response.statusCode == 202) {
+        // 202 Accepted: Polling required
         final jsonResponse = json.decode(response.body);
-        final List<dynamic> candidatesJson = jsonResponse['candidates'];
-        return candidatesJson
-            .map((json) => FoodCandidate.fromJson(json))
-            .toList();
+        final String analysisId = jsonResponse['analysisId'];
+        print('Analysis accepted, polling for result. analysisId: $analysisId');
+        // Polling logic
+        const int maxAttempts = 10;
+        const Duration interval = Duration(seconds: 1);
+        for (int i = 0; i < maxAttempts; i++) {
+          await Future.delayed(interval);
+          final pollResponse = await http.get(
+            Uri.parse('$_analysisEndpoint/$analysisId'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
+          print('Polling attempt ${i + 1}: status ${pollResponse.statusCode}');
+          if (pollResponse.statusCode == 200) {
+            final pollJson = json.decode(pollResponse.body);
+            if (pollJson['status'] == 'FAILED') {
+              throw Exception('분석에 실패했습니다.');
+            }
+            if (pollJson['status'] == 'COMPLETED') {
+              final result = pollJson['result'];
+              List<dynamic>? candidatesJson;
+              if (result is List) {
+                candidatesJson = result;
+              } else if (result is Map && result['candidates'] is List) {
+                candidatesJson = result['candidates'];
+              }
+              if (candidatesJson == null) throw Exception('분석 결과가 없습니다.');
+              return candidatesJson
+                  .map((json) => FoodCandidate.fromJson(json))
+                  .toList();
+            }
+          }
+        }
+        throw Exception('분석이 10초 내에 완료되지 않았습니다. 잠시 후 다시 시도해 주세요.');
       } else {
-        throw Exception('Analysis failed: ${response.statusCode}');
+        throw Exception(
+            'Analysis failed: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       throw Exception('Error calling analysis API: $e');

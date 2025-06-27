@@ -10,36 +10,44 @@ class ImagePickerDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('사진 선택'),
-      content: const Text('사진을 촬영하거나 갤러리에서 선택하세요.'),
+      title: const Text('Select Photo'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Take a photo or choose from gallery'),
+          const SizedBox(height: 16),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('camera'),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.camera_alt),
+                const SizedBox(width: 8),
+                Text('Camera'),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('gallery'),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.photo_library),
+                const SizedBox(width: 8),
+                Text('Gallery'),
+              ],
+            ),
+          ),
+        ],
+      ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop('camera'),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.camera_alt),
-              SizedBox(width: 8),
-              Text('카메라'),
-            ],
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop('gallery'),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.photo_library),
-              SizedBox(width: 8),
-              Text('갤러리'),
-            ],
-          ),
-        ),
-        TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
+          child: Text('Cancel'),
         ),
       ],
+      actionsPadding: const EdgeInsets.only(right: 16, bottom: 16),
     );
   }
 }
@@ -53,7 +61,7 @@ class ImagePickerHelper {
         // 카메라 권한 요청
         var status = await Permission.camera.request();
         if (status.isDenied) {
-          throw Exception('카메라 권한이 필요합니다.');
+          throw Exception('Camera permission is required.');
         }
       }
 
@@ -64,7 +72,7 @@ class ImagePickerHelper {
 
       return image;
     } catch (e) {
-      throw Exception('카메라 오류: $e');
+      throw Exception('Camera error: $e');
     }
   }
 
@@ -74,7 +82,7 @@ class ImagePickerHelper {
         // 갤러리 권한 요청
         var status = await Permission.photos.request();
         if (status.isDenied) {
-          throw Exception('갤러리 권한이 필요합니다.');
+          throw Exception('Gallery permission is required.');
         }
       }
 
@@ -85,7 +93,7 @@ class ImagePickerHelper {
 
       return image;
     } catch (e) {
-      throw Exception('갤러리 오류: $e');
+      throw Exception('Gallery error: $e');
     }
   }
 

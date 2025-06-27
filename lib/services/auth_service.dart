@@ -1,5 +1,8 @@
 import 'package:amazon_cognito_identity_dart_2/cognito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter/material.dart';
 
 class AuthService {
   static AuthService? _instance;
@@ -197,5 +200,89 @@ class AuthService {
     } catch (e) {
       return null;
     }
+  }
+
+  Future<Map<String, dynamic>> fetchUserProfile() async {
+    final token = await getAccessToken();
+    if (token == null) throw Exception('No access token');
+    final response = await http.get(
+      Uri.parse(
+          'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/profile'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to fetch profile');
+    }
+  }
+}
+
+class UserProfile {
+  final String sub;
+  final String email;
+  final bool emailVerified;
+  final String birthdate;
+  final String gender;
+  final double height;
+  final double weight;
+  final String activityLevel;
+  final String goal;
+  final int targetCalories;
+  final int targetCarbs;
+  final int targetProtein;
+  final int targetFats;
+
+  UserProfile({
+    required this.sub,
+    required this.email,
+    required this.emailVerified,
+    required this.birthdate,
+    required this.gender,
+    required this.height,
+    required this.weight,
+    required this.activityLevel,
+    required this.goal,
+    required this.targetCalories,
+    required this.targetCarbs,
+    required this.targetProtein,
+    required this.targetFats,
+  });
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    return UserProfile(
+      sub: json['sub'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      emailVerified:
+          json['email_verified'] == 'true' || json['email_verified'] == true,
+      birthdate: json['birthdate'] as String? ?? '',
+      gender: json['gender'] as String? ?? '',
+      height: (json['height'] as num?)?.toDouble() ?? 0.0,
+      weight: (json['weight'] as num?)?.toDouble() ?? 0.0,
+      activityLevel: json['activity_level'] as String? ?? '',
+      goal: json['goal'] as String? ?? '',
+      targetCalories: (json['target_calories'] as num?)?.toInt() ?? 0,
+      targetCarbs: (json['target_carbs'] as num?)?.toInt() ?? 0,
+      targetProtein: (json['target_protein'] as num?)?.toInt() ?? 0,
+      targetFats: (json['target_fats'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class UserProfileProvider extends ChangeNotifier {
+  UserProfile? _profile;
+  UserProfile? get profile => _profile;
+
+  void setProfile(UserProfile profile) {
+    _profile = profile;
+    notifyListeners();
+  }
+
+  void clear() {
+    _profile = null;
+    notifyListeners();
   }
 }

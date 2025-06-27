@@ -9,11 +9,13 @@ import '../models/meal_event.dart';
 class AddMealBottomSheet extends StatefulWidget {
   final List<FoodCandidate> candidates;
   final XFile imageFile;
+  final String objectKey;
 
   const AddMealBottomSheet({
     super.key,
     required this.candidates,
     required this.imageFile,
+    required this.objectKey,
   });
 
   @override
@@ -24,6 +26,9 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _manualNameController = TextEditingController();
   final _manualCaloriesController = TextEditingController();
+  final _manualProteinController = TextEditingController();
+  final _manualFatController = TextEditingController();
+  final _manualCarbsController = TextEditingController();
 
   int? _selectedCandidateIndex;
   MealType? _selectedMealType;
@@ -33,6 +38,9 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
   void dispose() {
     _manualNameController.dispose();
     _manualCaloriesController.dispose();
+    _manualProteinController.dispose();
+    _manualFatController.dispose();
+    _manualCarbsController.dispose();
     super.dispose();
   }
 
@@ -43,7 +51,10 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
       if (_formKey.currentState!.validate()) {
         selectedFood = FoodCandidate(
           name: _manualNameController.text,
-          calories: int.parse(_manualCaloriesController.text),
+          calories: double.parse(_manualCaloriesController.text),
+          protein: double.tryParse(_manualProteinController.text) ?? 0.0,
+          fat: double.tryParse(_manualFatController.text) ?? 0.0,
+          carbs: double.tryParse(_manualCarbsController.text) ?? 0.0,
         );
       } else {
         return; // Don't proceed if form is invalid
@@ -62,8 +73,7 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
     } else {
       // Show a snackbar or some feedback that all fields are required
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select a food and a meal type.')),
+        const SnackBar(content: Text('Please select a food and a meal type.')),
       );
     }
   }
@@ -168,7 +178,47 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter calories';
                         }
-                        if (int.tryParse(value) == null) {
+                        if (double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _manualProteinController,
+                      decoration:
+                          const InputDecoration(labelText: 'Protein (g)'),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null &&
+                            value.isNotEmpty &&
+                            double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _manualFatController,
+                      decoration: const InputDecoration(labelText: 'Fat (g)'),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null &&
+                            value.isNotEmpty &&
+                            double.tryParse(value) == null) {
+                          return 'Please enter a valid number';
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _manualCarbsController,
+                      decoration: const InputDecoration(labelText: 'Carbs (g)'),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null &&
+                            value.isNotEmpty &&
+                            double.tryParse(value) == null) {
                           return 'Please enter a valid number';
                         }
                         return null;
@@ -191,10 +241,10 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
             spacing: 8.0,
             children: MealType.values.map((mealType) {
               return ChoiceChip(
-                label: Text(
-                    mealType.name.substring(0, 1).toUpperCase() +
+                label: Text(mealType.name.substring(0, 1).toUpperCase() +
                     mealType.name.substring(1)),
                 selected: _selectedMealType == mealType,
+                showCheckmark: false,
                 onSelected: (selected) {
                   setState(() {
                     _selectedMealType = selected ? mealType : null;
@@ -203,7 +253,7 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -212,7 +262,10 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
                 backgroundColor: const Color(0xFF006FFD),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Add', style: TextStyle(color: Colors.white),),
+              child: const Text(
+                'Add',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -220,4 +273,4 @@ class _AddMealBottomSheetState extends State<AddMealBottomSheet> {
       ),
     );
   }
-} 
+}

@@ -3,7 +3,9 @@ import '../services/auth_service.dart';
 
 class ConfirmAccountScreen extends StatefulWidget {
   final String email;
-  const ConfirmAccountScreen({super.key, required this.email});
+  final String password;
+  const ConfirmAccountScreen(
+      {super.key, required this.email, required this.password});
 
   @override
   State<ConfirmAccountScreen> createState() => _ConfirmAccountScreenState();
@@ -29,8 +31,9 @@ class _ConfirmAccountScreenState extends State<ConfirmAccountScreen> {
     });
     try {
       await _authService.confirmSignUp(widget.email, _codeController.text);
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
+      final session = await _authService.signIn(widget.email, widget.password);
+      if (session != null && mounted) {
+        Navigator.pushReplacementNamed(context, '/onboarding');
       }
     } catch (e) {
       setState(() {

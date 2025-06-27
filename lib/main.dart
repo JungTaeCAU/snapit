@@ -5,10 +5,17 @@ import 'screens/signup_screen.dart';
 import 'screens/main_navigation_screen.dart';
 import 'screens/confirm_account_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/onboarding_profile_screen.dart';
 import 'services/auth_service.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(const SnapItApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => UserProfileProvider(),
+      child: const SnapItApp(),
+    ),
+  );
 }
 
 class SnapItApp extends StatelessWidget {
@@ -25,6 +32,7 @@ class SnapItApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFF7F7F7), // SnowFlake color
         useMaterial3: true,
+        fontFamily: 'Inter',
       ),
       initialRoute: '/',
       routes: {
@@ -36,8 +44,11 @@ class SnapItApp extends StatelessWidget {
           final args = ModalRoute.of(context)!.settings.arguments
               as Map<String, dynamic>?;
           final email = args?['email'] as String?;
-          return ConfirmAccountScreen(email: email ?? '');
+          final password = args?['password'] as String?;
+          return ConfirmAccountScreen(
+              email: email ?? '', password: password ?? '');
         },
+        '/onboarding': (context) => const OnboardingProfileScreen(),
       },
     );
   }

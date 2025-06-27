@@ -9,12 +9,14 @@
       "dependencies": [
         "amazon_cognito_identity_dart_2",
         "cupertino_icons",
+        "fl_chart",
         "flutter",
         "http",
         "image_picker",
         "intl",
         "mime",
         "path",
+        "percent_indicator",
         "permission_handler",
         "provider",
         "shared_preferences",
@@ -58,6 +60,21 @@
         "test_api",
         "vector_math",
         "vm_service"
+      ]
+    },
+    {
+      "name": "fl_chart",
+      "version": "0.66.2",
+      "dependencies": [
+        "equatable",
+        "flutter"
+      ]
+    },
+    {
+      "name": "percent_indicator",
+      "version": "4.2.5",
+      "dependencies": [
+        "flutter"
       ]
     },
     {
@@ -330,6 +347,14 @@
         "stream_channel",
         "string_scanner",
         "term_glyph"
+      ]
+    },
+    {
+      "name": "equatable",
+      "version": "2.0.7",
+      "dependencies": [
+        "collection",
+        "meta"
       ]
     },
     {
