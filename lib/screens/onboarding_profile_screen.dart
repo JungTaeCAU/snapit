@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../services/auth_service.dart'
     show AuthService, UserProfile, UserProfileProvider;
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OnboardingProfileScreen extends StatefulWidget {
   const OnboardingProfileScreen({super.key});
@@ -17,6 +18,9 @@ class _OnboardingProfileScreenState extends State<OnboardingProfileScreen> {
   static const int totalSteps = 6;
   int currentStep = 1;
   bool _isSubmitting = false;
+  final String _apiUrl = dotenv.env['API_URL'] ??
+      (throw Exception('API_URL not found in .env file'));
+  String get _saveProfileEndpoint => '$_apiUrl/profile';
 
   // 입력값 상태
   DateTime? birthDate;
@@ -90,8 +94,7 @@ class _OnboardingProfileScreenState extends State<OnboardingProfileScreen> {
 
       // Make PATCH request
       final response = await http.patch(
-        Uri.parse(
-            'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/profile'),
+        Uri.parse(_saveProfileEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

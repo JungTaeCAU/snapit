@@ -8,8 +8,10 @@ import 'screens/onboarding_screen.dart';
 import 'screens/onboarding_profile_screen.dart';
 import 'services/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
   runApp(
     ChangeNotifierProvider(
       create: (_) => UserProfileProvider(),

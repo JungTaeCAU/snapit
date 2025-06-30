@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
   static AuthService? _instance;
@@ -204,10 +205,11 @@ class AuthService {
 
   Future<Map<String, dynamic>> fetchUserProfile() async {
     final token = await getAccessToken();
+    final String? _apiUrl = dotenv.env['API_URL'];
+
     if (token == null) throw Exception('No access token');
     final response = await http.get(
-      Uri.parse(
-          'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/profile'),
+      Uri.parse('$_apiUrl/profile'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',

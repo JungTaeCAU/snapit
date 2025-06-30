@@ -6,6 +6,7 @@ import '../models/food_candidate.dart';
 import 'auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class FoodLogService {
   static final FoodLogService instance = FoodLogService._internal();
@@ -14,8 +15,8 @@ class FoodLogService {
 
   final AuthService _authService = AuthService.instance;
 
-  static const String baseUrl =
-      'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1';
+  static String? _baseUrl;
+  String get baseUrl => _baseUrl ??= dotenv.env['API_URL']!;
 
   // 월별 캐시: '2025-06' -> List<MealEvent>
   final Map<String, List<MealEvent>> _monthCache = {};

@@ -1,0 +1,10 @@
+# .env 파일 및 모든 .env.* 파일을 git 추적에서 제외
+.env*
+
+# 기타 제외 항목들...
+/build/
+.dart_tool/
+build/
+.build/
+.app/
+build/app/

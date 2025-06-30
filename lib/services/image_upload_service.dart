@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import '../models/food_candidate.dart';
 import '../models/meal_event.dart';
 import 'auth_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ImageUploadService {
   static final ImageUploadService _instance = ImageUploadService._internal();
@@ -15,18 +16,12 @@ class ImageUploadService {
   ImageUploadService._internal();
 
   final AuthService _authService = AuthService.instance;
+  final String _apiUrl = dotenv.env['API_URL'] ??
+      (throw Exception('API_URL not found in .env file'));
 
-  // 업로드 URL을 받기 위한 API 엔드포인트
-  static const String _getUploadUrlEndpoint =
-      'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/upload-url';
-
-  // 분석 URL을 호출하기 위한 API 엔드포인트 (이미지 업로드 성공 후)
-  static const String _analysisEndpoint =
-      'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/analyze';
-
-  // 식사 기록을 저장하기 위한 API 엔드포인트
-  static const String _saveMealEndpoint =
-      'https://t2n2c874oj.execute-api.us-east-1.amazonaws.com/v1/food-logs';
+  String get _getUploadUrlEndpoint => '$_apiUrl/upload-url';
+  String get _analysisEndpoint => '$_apiUrl/analyze';
+  String get _saveMealEndpoint => '$_apiUrl/food-logs';
 
   Future<Map<String, dynamic>?> uploadImage(XFile imageFile) async {
     try {
